@@ -20,6 +20,11 @@ public interface PlayerRepository extends JpaRepository<Player, Integer> {
 
     List<Player> findByTeamIdIsNull();
 
+    boolean existsByNicknameIgnoreCase(String nickname);
+
+    @Query("SELECT COUNT(p) FROM Player p WHERE p.teamId = :teamId")
+    int countPlayersInTeam(@Param("teamId") Integer teamId);
+
     @Query("SELECT p FROM Player p JOIN PlayerStats ps ON p.playerId = ps.playerId WHERE ps.kd > :minKd")
     List<Player> findPlayersWithKdGreaterThan(@Param("minKd") double minKd);
 

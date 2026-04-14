@@ -2,8 +2,11 @@ package com.faceit.controller;
 
 import com.faceit.dto.TeamRequest;
 import com.faceit.dto.TeamResponse;
+import com.faceit.dto.PlayerResponse;
 import com.faceit.entity.Team;
 import com.faceit.repository.TeamRepository;
+import com.faceit.service.PlayerService;
+import com.faceit.service.TeamService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +21,7 @@ import java.util.stream.Collectors;
 public class TeamController {
 
     private final TeamRepository teamRepository;
+    private final PlayerService playerService;
 
     // GET: получить все команды
     @GetMapping
@@ -34,6 +38,11 @@ public class TeamController {
                 .map(this::convertToResponse)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{id}/players")
+    public ResponseEntity<List<PlayerResponse>> getTeamPlayers(@PathVariable Integer id) {
+        return ResponseEntity.ok(playerService.getPlayersByTeam(id));
     }
 
     // POST: создать новую команду
@@ -53,6 +62,12 @@ public class TeamController {
 
         // Возвращаем ответ
         return ResponseEntity.status(HttpStatus.CREATED).body(convertToResponse(savedTeam));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTeam(@PathVariable Integer id) {
+        TeamService.deleteTeam(id);
+        return ResponseEntity.noContent().build();
     }
 
     // Вспомогательный метод: конвертация Entity → Response DTO
