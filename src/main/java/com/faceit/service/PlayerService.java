@@ -50,6 +50,8 @@ public class PlayerService {
 
     @Transactional
     public PlayerResponse createPlayer(PlayerRequest request) {
+        // Проверка: teamId не может быть null (это уже проверяет @NotNull)
+
         // Проверка: существует ли команда
         Team team = teamRepository.findById(request.getTeamId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -69,10 +71,10 @@ public class PlayerService {
                             team.getName(), currentPlayersCount, MAX_PLAYERS_PER_TEAM));
         }
 
-        // Создаём игрока
+        // Создаём игрока (teamId обязательно)
         Player player = new Player();
         player.setNickname(request.getNickname());
-        player.setTeamId(request.getTeamId());
+        player.setTeamId(request.getTeamId());  // ← всегда есть значение
 
         Player savedPlayer = playerRepository.save(player);
         return convertToResponse(savedPlayer);
@@ -119,33 +121,17 @@ public class PlayerService {
         playerRepository.deleteById(id);
     }
 
-    @Transactional
-    public PlayerResponse removePlayerFromTeam(Integer playerId) {
-        Player player = playerRepository.findById(playerId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Player not found with id: " + playerId));
-
-        if (player.getTeamId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Player is not in any team");
-        }
-
-        player.setTeamId(null);
-        Player updatedPlayer = playerRepository.save(player);
-        return convertToResponse(updatedPlayer);
-    }
-
     private PlayerResponse convertToResponse(Player player) {
-        AtomicReference<String> teamName = new AtomicReference<>();
+        final String[] teamName = {null};
         if (player.getTeamId() != null) {
-            teamRepository.findById(player.getTeamId()).ifPresent(team -> teamName.set(team.getName()));
+            teamRepository.findById(player.getTeamId()).ifPresent(team -> teamName[0] = team.getName());
         }
 
         return new PlayerResponse(
                 player.getPlayerId(),
                 player.getNickname(),
                 player.getTeamId(),
-                teamName
+                teamName[0]  // ← Здесь должен быть String, а не AtomicReference!
         );
     }
 }

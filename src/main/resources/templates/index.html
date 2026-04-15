@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faceit Admin Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #eee;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .buttons-section {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #00b894, #55efc4);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #d63031, #ff7675);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #fdcb6e, #ffeaa7);
+            color: #2d3436;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #0984e3, #74b9ff);
+            color: white;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .card h2 {
+            margin-bottom: 20px;
+            color: #e94560;
+            border-bottom: 2px solid #e94560;
+            padding-bottom: 10px;
+        }
+
+        .list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .list-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .list-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+        }
+
+        .list-item.active {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+        }
+
+        .item-name {
+            font-weight: 600;
+        }
+
+        .item-badge {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .item-stats {
+            display: flex;
+            gap: 10px;
+            font-size: 12px;
+        }
+
+        .stat-badge {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 12px;
+        }
+
+        .detail-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .detail-panel h3 {
+            color: #e94560;
+            margin-bottom: 20px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .detail-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .detail-value-small {
+            font-size: 14px;
+            font-weight: normal;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .player-list {
+            margin-top: 15px;
+        }
+
+        .player-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px 12px;
+            margin-top: 5px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .empty-message {
+            text-align: center;
+            opacity: 0.7;
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.3);
+            color: white;
+            font-size: 14px;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+
+        .player-stats-row {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #e94560;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            .player-stats-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🎮 Faceit Admin Panel</h1>
+        <p>Управление командами, игроками и статистикой матчей</p>
+    </div>
+
+    <div class="buttons-section">
+        <button class="btn btn-primary" onclick="showCreateTeamModal()">➕ Создать команду</button>
+        <button class="btn btn-primary" onclick="showCreatePlayerModal()">➕ Создать игрока</button>
+        <button class="btn btn-success" onclick="showAddMatchModal()">🎯 Добавить матч</button>
+    </div>
+
+    <div class="content">
+        <!-- Teams List -->
+        <div class="card">
+            <h2>🏆 Команды</h2>
+            <div class="list" id="teamsList">
+                <div class="empty-message">Загрузка...</div>
+            </div>
+        </div>
+
+        <!-- Players List -->
+        <div class="card">
+            <h2>👥 Игроки</h2>
+            <div class="list" id="playersList">
+                <div class="empty-message">Загрузка...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Panel -->
+    <div class="detail-panel" id="detailPanel">
+        <h3>📊 Детальная информация</h3>
+        <div id="detailContent">
+            <div class="empty-message">Нажмите на команду или игрока для просмотра деталей</div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for adding match -->
+<div id="matchModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000;">
+    <div style="background: #1a1a2e; border-radius: 16px; padding: 30px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; border: 1px solid #e94560;">
+        <h3 style="color: #e94560; margin-bottom: 20px;">🎯 Добавить матч</h3>
+        <div class="form-group">
+            <label>Команда 1</label>
+            <select id="matchTeam1Id" class="team-select"></select>
+        </div>
+        <div class="form-group">
+            <label>Счёт команды 1</label>
+            <input type="number" id="matchTeam1Score" placeholder="0-24" min="0" max="24">
+        </div>
+        <div class="form-group">
+            <label>Команда 2</label>
+            <select id="matchTeam2Id" class="team-select"></select>
+        </div>
+        <div class="form-group">
+            <label>Счёт команды 2</label>
+            <input type="number" id="matchTeam2Score" placeholder="0-24" min="0" max="24">
+        </div>
+        <div class="form-group">
+            <label>Карта</label>
+            <input type="text" id="matchMap" placeholder="Например: Mirage, Dust2, Inferno">
+        </div>
+        <div class="form-group">
+            <label>Статистика игроков (ID игрока: убийства/помощь/смерти)</label>
+            <div id="playerStatsInputs"></div>
+            <button class="btn btn-info" style="margin-top: 10px;" onclick="addPlayerStatInput()">➕ Добавить игрока</button>
+        </div>
+        <div class="modal-buttons">
+            <button class="btn btn-warning" onclick="closeMatchModal()">Отмена</button>
+            <button class="btn btn-success" onclick="addMatch()">Сохранить матч</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = '/api';
+    let playerStatIndex = 0;
+
+    // Загрузка при старте
+    document.addEventListener('DOMContentLoaded', () => {
+        loadTeams();
+        loadPlayers();
+        loadTeamStats();
+        loadPlayerStats();
+    });
+
+    // ==================== ЗАГРУЗКА СТАТИСТИКИ ====================
+    async function loadTeamStats() {
+        try {
+            const response = await fetch(`${API_BASE}/stats/teams`);
+            if (response.ok) {
+                const stats = await response.json();
+                window.teamStatsMap = new Map();
+                stats.forEach(s => window.teamStatsMap.set(s.teamId, s));
+            }
+        } catch (error) {
+            console.error('Error loading team stats:', error);
+        }
+    }
+
+    async function loadPlayerStats() {
+        try {
+            const response = await fetch(`${API_BASE}/stats/players`);
+            if (response.ok) {
+                const stats = await response.json();
+                window.playerStatsMap = new Map();
+                stats.forEach(s => window.playerStatsMap.set(s.playerId, s));
+            }
+        } catch (error) {
+            console.error('Error loading player stats:', error);
+        }
+    }
+
+    // ==================== КОМАНДЫ ====================
+    async function loadTeams() {
+        try {
+            const response = await fetch(`${API_BASE}/teams`);
+            if (!response.ok) throw new Error('Ошибка загрузки');
+            const teams = await response.json();
+            renderTeams(teams);
+            updateTeamSelects(teams);
+            await loadTeamStats();
+        } catch (error) {
+            console.error(error);
+            document.getElementById('teamsList').innerHTML = '<div class="empty-message">❌ Ошибка загрузки команд</div>';
+        }
+    }
+
+    function renderTeams(teams) {
+        const container = document.getElementById('teamsList');
+        if (!teams || teams.length === 0) {
+            container.innerHTML = '<div class="empty-message">📭 Нет команд. Создайте первую!</div>';
+            return;
+        }
+
+        container.innerHTML = teams.map(team => {
+            const stats = window.teamStatsMap?.get(team.teamId);
+            return `
+                <div class="list-item" onclick="showTeamDetail(${team.teamId})">
+                    <span class="item-name">🏆 ${escapeHtml(team.name)}</span>
+                    <div class="item-stats">
+                        <span class="stat-badge">📊 М:${stats?.matchesPlayed || 0}</span>
+                        <span class="stat-badge">🏆 В:${stats?.matchesWon || 0}</span>
+                        <span class="stat-badge">📈 WR:${stats?.winRate || 0}%</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function updateTeamSelects(teams) {
+        const selects = document.querySelectorAll('.team-select');
+        selects.forEach(select => {
+            select.innerHTML = '<option value="">Выберите команду</option>' +
+                teams.map(t => `<option value="${t.teamId}">${escapeHtml(t.name)} (ID: ${t.teamId})</option>`).join('');
+        });
+    }
+
+    async function showTeamDetail(teamId) {
+        if (!teamId) return;
+
+        try {
+            const [teamRes, playersRes, statsRes] = await Promise.all([
+                fetch(`${API_BASE}/teams/${teamId}`),
+                fetch(`${API_BASE}/teams/${teamId}/players`),
+                fetch(`${API_BASE}/stats/teams/${teamId}`)
+            ]);
+
+            const team = await teamRes.json();
+            const players = await playersRes.json();
+            const stats = statsRes.ok ? await statsRes.json() : null;
+
+            document.getElementById('detailContent').innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">ID команды</div>
+                        <div class="detail-value">${team.teamId}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Название</div>
+                        <div class="detail-value">${escapeHtml(team.name)}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Сыграно матчей</div>
+                        <div class="detail-value">${stats?.matchesPlayed || 0}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Побед</div>
+                        <div class="detail-value">${stats?.matchesWon || 0}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Процент побед</div>
+                        <div class="detail-value ${(stats?.winRate || 0) >= 50 ? 'stat-good' : 'stat-bad'}">${stats?.winRate || 0}%</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Игроков</div>
+                        <div class="detail-value">${players.length} / 5</div>
+                    </div>
+                </div>
+                <div style="margin-top: 20px;">
+                    <h4>📋 Состав команды и их статистика:</h4>
+                    <div class="player-list">
+                        ${players.length > 0 ? players.map(p => {
+                            const playerStats = window.playerStatsMap?.get(p.playerId);
+                            return `
+                                <div class="player-item">
+                                    <span>👤 ${escapeHtml(p.nickname)}</span>
+                                    <div class="item-stats">
+                                        <span class="stat-badge">💀 K/D: ${playerStats?.kd || 0}</span>
+                                        <span class="stat-badge">📊 WR: ${playerStats?.winRate || 0}%</span>
+                                    </div>
+                                    <button class="btn btn-info" style="padding: 5px 10px; font-size: 12px;" onclick="showPlayerDetail(${p.playerId})">📊 Статистика</button>
+                                    <button class="btn btn-danger" style="padding: 5px 10px; font-size: 12px;" onclick="deletePlayer(${p.playerId})">🗑️ Удалить</button>
+                                </div>
+                            `;
+                        }).join('') : '<div class="empty-message">Нет игроков в команде</div>'}
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button class="btn btn-danger" onclick="deleteTeam(${team.teamId})">🗑️ Удалить команду</button>
+                </div>
+            `;
+        } catch (error) {
+            console.error(error);
+            document.getElementById('detailContent').innerHTML = '<div class="empty-message">❌ Ошибка загрузки деталей команды</div>';
+        }
+    }
+
+    async function deleteTeam(teamId) {
+        if (!teamId) return;
+        if (!confirm('Удалить команду?')) return;
+
+        try {
+            const response = await fetch(`${API_BASE}/teams/${teamId}`, { method: 'DELETE' });
+            if (response.ok) {
+                loadTeams();
+                loadPlayers();
+                document.getElementById('detailContent').innerHTML = '<div class="empty-message">✅ Команда удалена</div>';
+                alert('Команда удалена');
+            } else {
+                const error = await response.text();
+                alert('Ошибка: ' + error);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Ошибка при удалении команды');
+        }
+    }
+
+    // ==================== ИГРОКИ ====================
+    async function loadPlayers() {
+        try {
+            const [playersRes, statsRes] = await Promise.all([
+                fetch(`${API_BASE}/players`),
+                fetch(`${API_BASE}/stats/players`)
+            ]);
+
+            if (!playersRes.ok) throw new Error('Ошибка загрузки');
+            const players = await playersRes.json();
+            const stats = statsRes.ok ? await statsRes.json() : [];
+
+            window.playerStatsMap = new Map();
+            stats.forEach(s => window.playerStatsMap.set(s.playerId, s));
+
+            renderPlayers(players);
+        } catch (error) {
+            console.error(error);
+            document.getElementById('playersList').innerHTML = '<div class="empty-message">❌ Ошибка загрузки игроков</div>';
+        }
+    }
+
+    function renderPlayers(players) {
+        const container = document.getElementById('playersList');
+        if (!players || players.length === 0) {
+            container.innerHTML = '<div class="empty-message">📭 Нет игроков. Создайте первого!</div>';
+            return;
+        }
+
+        container.innerHTML = players.map(player => {
+            const stats = window.playerStatsMap?.get(player.playerId);
+            return `
+                <div class="list-item" onclick="showPlayerDetail(${player.playerId})">
+                    <span class="item-name">👤 ${escapeHtml(player.nickname)}</span>
+                    <div class="item-stats">
+                        <span class="stat-badge">💀 K/D: ${stats?.kd || 0}</span>
+                        <span class="stat-badge">📊 WR: ${stats?.winRate || 0}%</span>
+                    </div>
+                    <span class="item-badge">${escapeHtml(player.teamName || 'Без команды')}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function showPlayerDetail(playerId) {
+        if (!playerId) return;
+
+        try {
+            const [playerRes, statsRes] = await Promise.all([
+                fetch(`${API_BASE}/players/${playerId}`),
+                fetch(`${API_BASE}/stats/players/${playerId}`)
+            ]);
+
+            const player = await playerRes.json();
+            const stats = statsRes.ok ? await statsRes.json() : null;
+
+            const teamsRes = await fetch(`${API_BASE}/teams`);
+            const teams = await teamsRes.json();
+
+            document.getElementById('detailContent').innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">ID игрока</div>
+                        <div class="detail-value">${player.playerId}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Никнейм</div>
+                        <div class="detail-value">${escapeHtml(player.nickname)}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Текущая команда</div>
+                        <div class="detail-value">${escapeHtml(player.teamName || 'Без команды')}</div>
+                    </div>
+                </div>
+                <div style="margin-top: 20px;">
+                    <h4>📊 Статистика игрока:</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Убийства</div>
+                            <div class="detail-value">${stats?.kills || 0}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Помощь</div>
+                            <div class="detail-value">${stats?.assists || 0}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Смерти</div>
+                            <div class="detail-value">${stats?.deaths || 0}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">K/D</div>
+                            <div class="detail-value ${(stats?.kd || 0) >= 1 ? 'stat-good' : 'stat-bad'}">${stats?.kd || 0}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">K/R</div>
+                            <div class="detail-value">${stats?.kr || 0}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Сыграно матчей</div>
+                            <div class="detail-value">${stats?.matchesPlayed || 0}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Побед</div>
+                            <div class="detail-value">${stats?.matchesWon || 0}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Процент побед</div>
+                            <div class="detail-value ${(stats?.winRate || 0) >= 50 ? 'stat-good' : 'stat-bad'}">${stats?.winRate || 0}%</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 20px;">
+                    <h4>🔄 Переместить в другую команду:</h4>
+                    <select id="moveTeamSelect" style="width: 100%; padding: 10px; margin-top: 10px; background: rgba(0,0,0,0.3); color: white; border: 1px solid #e94560; border-radius: 8px;">
+                        <option value="">Выберите команду</option>
+                        ${teams.filter(t => t.teamId !== player.teamId).map(t => `
+                            <option value="${t.teamId}">${escapeHtml(t.name)} (ID: ${t.teamId})</option>
+                        `).join('')}
+                    </select>
+                    <button class="btn btn-info" style="margin-top: 10px; width: 100%;" onclick="movePlayerToTeam(${player.playerId})">🔄 Переместить</button>
+                </div>
+                <div class="modal-buttons">
+                    <button class="btn btn-danger" onclick="deletePlayer(${player.playerId})">🗑️ Удалить игрока</button>
+                </div>
+            `;
+        } catch (error) {
+            console.error(error);
+            document.getElementById('detailContent').innerHTML = '<div class="empty-message">❌ Ошибка загрузки деталей игрока</div>';
+        }
+    }
+
+    async function movePlayerToTeam(playerId) {
+        const select = document.getElementById('moveTeamSelect');
+        const newTeamId = select.value;
+
+        if (!newTeamId) {
+            alert('Выберите команду');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/players/${playerId}/team/${newTeamId}`, { method: 'PUT' });
+            if (response.ok) {
+                loadPlayers();
+                loadTeams();
+                showPlayerDetail(playerId);
+                alert('Игрок перемещён!');
+            } else {
+                const error = await response.text();
+                alert('Ошибка: ' + error);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Ошибка при перемещении игрока');
+        }
+    }
+
+    async function deletePlayer(playerId) {
+        if (!playerId) return;
+        if (!confirm('Удалить игрока?')) return;
+
+        try {
+            const response = await fetch(`${API_BASE}/players/${playerId}`, { method: 'DELETE' });
+            if (response.ok) {
+                loadPlayers();
+                loadTeams();
+                document.getElementById('detailContent').innerHTML = '<div class="empty-message">✅ Игрок удалён</div>';
+                alert('Игрок удалён');
+            } else {
+                const error = await response.text();
+                alert('Ошибка: ' + error);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Ошибка при удалении игрока');
+        }
+    }
+
+    // ==================== СОЗДАНИЕ ====================
+    async function showCreateTeamModal() {
+        const name = prompt('Введите название команды:');
+        if (name && name.trim()) {
+            await createTeam(name.trim());
+        }
+    }
+
+    async function createTeam(name) {
+        try {
+            const response = await fetch(`${API_BASE}/teams`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+
+            if (response.ok) {
+                loadTeams();
+                alert('✅ Команда создана!');
+            } else {
+                const error = await response.text();
+                alert('❌ Ошибка: ' + error);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('❌ Ошибка при создании команды');
+        }
+    }
+
+    async function showCreatePlayerModal() {
+        const nickname = prompt('Введите никнейм игрока:');
+        if (!nickname || !nickname.trim()) {
+            alert('Никнейм обязателен');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/teams`);
+            const teams = await response.json();
+
+            if (teams.length === 0) {
+                alert('Сначала создайте команду!');
+                return;
+            }
+
+            let teamList = 'Доступные команды:\n';
+            teams.forEach(t => {
+                teamList += `${t.teamId}. ${t.name}\n`;
+            });
+            teamList += '\nВведите ID команды:';
+
+            const teamId = prompt(teamList);
+            if (!teamId || !teamId.trim()) {
+                alert('ID команды обязателен');
+                return;
+            }
+
+            await createPlayer(nickname.trim(), parseInt(teamId));
+        } catch (error) {
+            console.error(error);
+            alert('Ошибка при загрузке команд');
+        }
+    }
+
+    async function createPlayer(nickname, teamId) {
+        try {
+            const response = await fetch(`${API_BASE}/players`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nickname, teamId })
+            });
+
+            if (response.ok) {
+                loadPlayers();
+                loadTeams();
+                alert('✅ Игрок создан!');
+            } else {
+                const error = await response.text();
+                alert('❌ Ошибка: ' + error);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('❌ Ошибка при создании игрока');
+        }
+    }
+
+    // ==================== МАТЧИ ====================
+    async function showAddMatchModal() {
+        await loadTeams();
+        document.getElementById('matchModal').style.display = 'flex';
+        playerStatIndex = 0;
+        document.getElementById('playerStatsInputs').innerHTML = '';
+        addPlayerStatInput();
+    }
+
+    function closeMatchModal() {
+        document.getElementById('matchModal').style.display = 'none';
+    }
+
+    function addPlayerStatInput() {
+        playerStatIndex++;
+        const container = document.getElementById('playerStatsInputs');
+        const div = document.createElement('div');
+        div.className = 'player-stats-row';
+        div.id = `playerStatDiv_${playerStatIndex}`;
+        div.innerHTML = `
+            <input type="number" id="playerId_${playerStatIndex}" placeholder="ID игрока" style="padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white;">
+            <input type="number" id="playerKills_${playerStatIndex}" placeholder="Убийства" style="padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white;">
+            <input type="number" id="playerAssists_${playerStatIndex}" placeholder="Помощь" style="padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white;">
+            <input type="number" id="playerDeaths_${playerStatIndex}" placeholder="Смерти" style="padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white;">
+            <button class="btn btn-danger" style="padding: 5px 10px;" onclick="removePlayerStatInput(${playerStatIndex})">❌</button>
+        `;
+        container.appendChild(div);
+    }
+
+    function removePlayerStatInput(index) {
+        const div = document.getElementById(`playerStatDiv_${index}`);
+        if (div) div.remove();
+    }
+
+    async function addMatch() {
+        const team1Id = document.getElementById('matchTeam1Id').value;
+        const team2Id = document.getElementById('matchTeam2Id').value;
+        const team1Score = parseInt(document.getElementById('matchTeam1Score').value);
+        const team2Score = parseInt(document.getElementById('matchTeam2Score').value);
+        const mapName = document.getElementById('matchMap').value;
+
+        if (!team1Id || !team2Id) {
+            alert('Выберите обе команды');
+            return;
+        }
+        if (team1Id === team2Id) {
+            alert('Команды должны быть разными');
+            return;
+        }
+        if (isNaN(team1Score) || isNaN(team2Score)) {
+            alert('Введите счёт');
+            return;
+        }
+
+        const playerStats = [];
+        for (let i = 1; i <= playerStatIndex; i++) {
+            const playerId = document.getElementById(`playerId_${i}`)?.value;
+            if (playerId) {
+                playerStats.push({
+                    playerId: parseInt(playerId),
+                    kills: parseInt(document.getElementById(`playerKills_${i}`)?.value) || 0,
+                    assists: parseInt(document.getElementById(`playerAssists_${i}`)?.value) || 0,
+                    deaths: parseInt(document.getElementById(`playerDeaths_${i}`)?.value) || 0
+                });
+            }
+        }
+
+        const matchData = {
+            team1Id: parseInt(team1Id),
+            team2Id: parseInt(team2Id),
+            team1Score: team1Score,
+            team2Score: team2Score,
+            mapName: mapName,
+            playerStats: playerStats
+        };
+
+        try {
+            const response = await fetch(`${API_BASE}/matches`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(matchData)
+            });
+
+            if (response.ok) {
+                closeMatchModal();
+                loadTeams();
+                loadPlayers();
+                await loadTeamStats();
+                await loadPlayerStats();
+                alert('✅ Матч добавлен! Статистика обновлена.');
+            } else {
+                const error = await response.text();
+                alert('❌ Ошибка: ' + error);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('❌ Ошибка при добавлении матча');
+        }
+    }
+
+    // ==================== ВСПОМОГАТЕЛЬНЫЕ ====================
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+</script>
+</body>
+</html>

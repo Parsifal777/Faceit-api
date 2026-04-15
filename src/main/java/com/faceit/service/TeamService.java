@@ -4,7 +4,6 @@ import com.faceit.dto.TeamRequest;
 import com.faceit.dto.TeamResponse;
 import com.faceit.entity.Team;
 import com.faceit.repository.TeamRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,10 +13,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class TeamService {
 
-    private static final TeamRepository teamRepository = null;
+    private final TeamRepository teamRepository;
+
+    // Ручной конструктор вместо Lombok
+    public TeamService(TeamRepository teamRepository) {
+        this.teamRepository = teamRepository;
+    }
 
     public List<TeamResponse> getAllTeams() {
         return teamRepository.findAll().stream()
@@ -45,7 +48,7 @@ public class TeamService {
     }
 
     @Transactional
-    public static void deleteTeam(Integer id) {
+    public void deleteTeam(Integer id) {
         if (!teamRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found with id: " + id);
         }

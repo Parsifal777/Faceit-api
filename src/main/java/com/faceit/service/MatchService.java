@@ -1,0 +1,213 @@
+package com.faceit.service;
+
+import com.faceit.dto.MatchRequest;
+import com.faceit.entity.*;
+import com.faceit.repository.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+
+@Service
+@RequiredArgsConstructor
+public class MatchService {
+
+    private final MatchRepository matchRepository;
+    private final PlayerMatchStatsRepository playerMatchStatsRepository;
+    private final TeamRepository teamRepository;
+    private final TeamStatisticsRepository teamStatisticsRepository;
+    private final TeamStatsRepository teamStatsRepository;
+    private final PlayerStatisticsRepository playerStatisticsRepository;
+    private final PlayerStatsRepository playerStatsRepository;
+    private final PlayerRepository playerRepository;  // ← ДОБАВЬ ЭТО!
+
+    private static final int MAX_ROUNDS = 24;
+
+    @Transactional
+    public void addMatch(MatchRequest request) {
+        // Проверка: существуют ли команды
+        if (!teamRepository.existsById(request.getTeam1Id())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Team1 not found: " + request.getTeam1Id());
+        }
+        if (!teamRepository.existsById(request.getTeam2Id())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Team2 not found: " + request.getTeam2Id());
+        }
+
+        // Проверка: счёт корректен
+        if (request.getTeam1Score() < 0 || request.getTeam2Score() < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Scores cannot be negative");
+        }
+        if (request.getTeam1Score() > MAX_ROUNDS || request.getTeam2Score() > MAX_ROUNDS) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Max rounds is " + MAX_ROUNDS);
+        }
+
+        // Определяем победителя
+        Integer winnerTeamId = null;
+        int team1Won = 0;
+        int team2Won = 0;
+
+        if (request.getTeam1Score() > request.getTeam2Score()) {
+            winnerTeamId = request.getTeam1Id();
+            team1Won = 1;
+            team2Won = 0;
+        } else if (request.getTeam2Score() > request.getTeam1Score()) {
+            winnerTeamId = request.getTeam2Id();
+            team1Won = 0;
+            team2Won = 1;
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Match cannot be a draw");
+        }
+
+        // Создаём матч
+        Match match = new Match();
+        match.setTeam1Id(request.getTeam1Id());
+        match.setTeam2Id(request.getTeam2Id());
+        match.setTeam1Score(request.getTeam1Score());
+        match.setTeam2Score(request.getTeam2Score());
+        match.setWinnerTeamId(winnerTeamId);
+        match.setMatchDate(LocalDateTime.now());
+        match.setMapName(request.getMapName());
+
+        Match savedMatch = matchRepository.save(match);
+
+        // Обновляем статистику команд
+        updateTeamStats(request.getTeam1Id(), team1Won);
+        updateTeamStats(request.getTeam2Id(), team2Won);
+
+        // Обновляем статистику игроков
+        if (request.getPlayerStats() != null) {
+            for (MatchRequest.PlayerMatchStatRequest stat : request.getPlayerStats()) {
+                // Проверка: существует ли игрок
+                if (!playerRepository.existsById(stat.getPlayerId())) {
+                    continue;
+                }
+
+                // Сохраняем статистику игрока в матче
+                PlayerMatchStats playerMatchStats = new PlayerMatchStats();
+                playerMatchStats.setMatchId(savedMatch.getMatchId());
+                playerMatchStats.setPlayerId(stat.getPlayerId());
+                playerMatchStats.setKills(stat.getKills());
+                playerMatchStats.setAssists(stat.getAssists());
+                playerMatchStats.setDeaths(stat.getDeaths());
+                playerMatchStatsRepository.save(playerMatchStats);
+
+                // Определяем, победил ли игрок (если его команда победила)
+                int playerWon = 0;
+                Integer playerTeamId = getPlayerTeamId(stat.getPlayerId());
+                if (playerTeamId != null && playerTeamId.equals(winnerTeamId)) {
+                    playerWon = 1;
+                }
+
+                // Обновляем статистику игрока
+                updatePlayerStats(stat.getPlayerId(), stat.getKills(), stat.getAssists(), stat.getDeaths(), playerWon);
+            }
+        }
+    }
+
+    private void updateTeamStats(Integer teamId, int won) {
+        // Обновляем сырую статистику
+        TeamStatistics teamStats = teamStatisticsRepository.findByTeamId(teamId)
+                .orElseGet(() -> {
+                    TeamStatistics ts = new TeamStatistics();
+                    ts.setTeamId(teamId);
+                    ts.setMatchesPlayed(0);
+                    ts.setMatchesWon(0);
+                    return ts;
+                });
+
+        teamStats.setMatchesPlayed(teamStats.getMatchesPlayed() + 1);
+        teamStats.setMatchesWon(teamStats.getMatchesWon() + won);
+        teamStatisticsRepository.save(teamStats);
+
+        // Пересчитываем и обновляем винрейт
+        BigDecimal winRate = BigDecimal.ZERO;
+        if (teamStats.getMatchesPlayed() > 0) {
+            winRate = BigDecimal.valueOf(teamStats.getMatchesWon())
+                    .divide(BigDecimal.valueOf(teamStats.getMatchesPlayed()), 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100))
+                    .setScale(2, RoundingMode.HALF_UP);
+        }
+
+        TeamStats teamStatsCalc = teamStatsRepository.findByTeamId(teamId)
+                .orElseGet(() -> {
+                    TeamStats ts = new TeamStats();
+                    ts.setTeamId(teamId);
+                    ts.setWinRate(BigDecimal.ZERO);
+                    return ts;
+                });
+        teamStatsCalc.setWinRate(winRate);
+        teamStatsRepository.save(teamStatsCalc);
+    }
+
+    private void updatePlayerStats(Integer playerId, int kills, int assists, int deaths, int won) {
+        // Обновляем сырую статистику
+        PlayerStatistics playerStats = playerStatisticsRepository.findByPlayerId(playerId)
+                .orElseGet(() -> {
+                    PlayerStatistics ps = new PlayerStatistics();
+                    ps.setPlayerId(playerId);
+                    ps.setKills(0);
+                    ps.setAssists(0);
+                    ps.setDeaths(0);
+                    ps.setMatchesPlayed(0);
+                    ps.setMatchesWon(0);
+                    return ps;
+                });
+
+        playerStats.setKills(playerStats.getKills() + kills);
+        playerStats.setAssists(playerStats.getAssists() + assists);
+        playerStats.setDeaths(playerStats.getDeaths() + deaths);
+        playerStats.setMatchesPlayed(playerStats.getMatchesPlayed() + 1);
+        playerStats.setMatchesWon(playerStats.getMatchesWon() + won);
+        playerStatisticsRepository.save(playerStats);
+
+        // Пересчитываем K/D
+        BigDecimal kd = BigDecimal.ZERO;
+        if (playerStats.getDeaths() > 0) {
+            kd = BigDecimal.valueOf(playerStats.getKills())
+                    .divide(BigDecimal.valueOf(playerStats.getDeaths()), 2, RoundingMode.HALF_UP);
+        } else if (playerStats.getKills() > 0) {
+            kd = BigDecimal.valueOf(playerStats.getKills());
+        }
+
+        // Пересчитываем K/R (примерно 15 раундов за матч в среднем)
+        int totalRounds = playerStats.getMatchesPlayed() * 15;
+        BigDecimal kr = BigDecimal.ZERO;
+        if (totalRounds > 0) {
+            kr = BigDecimal.valueOf(playerStats.getKills())
+                    .divide(BigDecimal.valueOf(totalRounds), 2, RoundingMode.HALF_UP);
+        }
+
+        // Пересчитываем винрейт
+        BigDecimal winRate = BigDecimal.ZERO;
+        if (playerStats.getMatchesPlayed() > 0) {
+            winRate = BigDecimal.valueOf(playerStats.getMatchesWon())
+                    .divide(BigDecimal.valueOf(playerStats.getMatchesPlayed()), 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100))
+                    .setScale(2, RoundingMode.HALF_UP);
+        }
+
+        // Обновляем вычисляемую статистику
+        PlayerStats playerStatsCalc = playerStatsRepository.findByPlayerId(playerId)
+                .orElseGet(() -> {
+                    PlayerStats ps = new PlayerStats();
+                    ps.setPlayerId(playerId);
+                    ps.setWinRate(BigDecimal.ZERO);
+                    ps.setKd(BigDecimal.ZERO);
+                    ps.setKr(BigDecimal.ZERO);
+                    return ps;
+                });
+        playerStatsCalc.setWinRate(winRate);
+        playerStatsCalc.setKd(kd);
+        playerStatsCalc.setKr(kr);
+        playerStatsRepository.save(playerStatsCalc);
+    }
+
+    private Integer getPlayerTeamId(Integer playerId) {
+        return playerRepository.findTeamIdByPlayerId(playerId);
+    }
+}

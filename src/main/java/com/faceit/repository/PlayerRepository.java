@@ -25,6 +25,9 @@ public interface PlayerRepository extends JpaRepository<Player, Integer> {
     @Query("SELECT COUNT(p) FROM Player p WHERE p.teamId = :teamId")
     int countPlayersInTeam(@Param("teamId") Integer teamId);
 
+    @Query("SELECT p.teamId FROM Player p WHERE p.playerId = :playerId")
+    Integer findTeamIdByPlayerId(@Param("playerId") Integer playerId);
+
     @Query("SELECT p FROM Player p JOIN PlayerStats ps ON p.playerId = ps.playerId WHERE ps.kd > :minKd")
     List<Player> findPlayersWithKdGreaterThan(@Param("minKd") double minKd);
 

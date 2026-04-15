@@ -26,7 +26,7 @@ public class Player {
     @Column(name = "nickname", nullable = false, unique = true, length = 50)
     private String nickname;
 
-    @Column(name = "team_id")
+    @Column(name = "team_id", nullable = false)  // ← добавь nullable = false
     private Integer teamId;
 
     // Relationship with Team (Many to One)

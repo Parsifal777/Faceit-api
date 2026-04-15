@@ -22,6 +22,7 @@ public class TeamController {
 
     private final TeamRepository teamRepository;
     private final PlayerService playerService;
+    private final TeamService teamService;
 
     // GET: получить все команды
     @GetMapping
@@ -66,7 +67,7 @@ public class TeamController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTeam(@PathVariable Integer id) {
-        TeamService.deleteTeam(id);
+        teamService.deleteTeam(id);
         return ResponseEntity.noContent().build();
     }
 

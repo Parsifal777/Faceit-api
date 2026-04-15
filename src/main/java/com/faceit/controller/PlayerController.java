@@ -51,13 +51,6 @@ public class PlayerController {
         return ResponseEntity.ok(response);
     }
 
-    // DELETE: удалить игрока из команды (но не из БД, просто обнулить team_id)
-    @DeleteMapping("/{playerId}/team")
-    public ResponseEntity<PlayerResponse> removePlayerFromTeam(@PathVariable Integer playerId) {
-        PlayerResponse response = playerService.removePlayerFromTeam(playerId);
-        return ResponseEntity.ok(response);
-    }
-
     // DELETE: полностью удалить игрока
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePlayer(@PathVariable Integer id) {
