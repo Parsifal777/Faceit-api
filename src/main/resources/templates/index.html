@@ -343,7 +343,7 @@
         </div>
         <div class="form-group">
             <label>Счёт команды 1</label>
-            <input type="number" id="matchTeam1Score" placeholder="0-24" min="0" max="24">
+            <input type="number" id="matchTeam1Score" placeholder="0-13" min="0" max="13">
         </div>
         <div class="form-group">
             <label>Команда 2</label>
@@ -351,7 +351,7 @@
         </div>
         <div class="form-group">
             <label>Счёт команды 2</label>
-            <input type="number" id="matchTeam2Score" placeholder="0-24" min="0" max="24">
+            <input type="number" id="matchTeam2Score" placeholder="0-13" min="0" max="13">
         </div>
         <div class="form-group">
             <label>Карта</label>
@@ -862,6 +862,22 @@
         }
         if (isNaN(team1Score) || isNaN(team2Score)) {
             alert('Введите счёт');
+            return;
+        }
+
+        if (team1Score >= 13 && team2Score > 11) {
+        alert('Неверный счёт: Если команда набрала 13 раундов, соперник не может иметь больше 11 раундов');
+        return;
+        }
+        if (team2Score >= 13 && team1Score > 11) {
+            alert('Неверный счёт: Если команда набрала 13 раундов, соперник не может иметь больше 11 раундов');
+            return;
+        }
+
+        // Проверка на минимальное преимущество
+        if ((team1Score >= 13 && (team1Score - team2Score) < 2) ||
+            (team2Score >= 13 && (team2Score - team1Score) < 2)) {
+            alert('Неверный счёт: Для победы нужно преимущество минимум в 2 раунда');
             return;
         }
 

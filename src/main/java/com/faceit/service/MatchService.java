@@ -27,7 +27,7 @@ public class MatchService {
     private final PlayerRepository playerRepository;
     private final RedisStatsService redisStatsService;
 
-    private static final int MAX_ROUNDS = 24;
+    private static final int MAX_ROUNDS = 13;
 
     @Transactional
     public void addMatch(MatchRequest request) {
@@ -45,6 +45,25 @@ public class MatchService {
         }
         if (request.getTeam1Score() > MAX_ROUNDS || request.getTeam2Score() > MAX_ROUNDS) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Max rounds is " + MAX_ROUNDS);
+        }
+
+        if (request.getTeam1Score() == 13 && request.getTeam2Score() > 11) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid score: If team has 13 rounds, opponent cannot have more than 11 rounds (max 24 total)");
+        }
+        if (request.getTeam2Score() == 13 && request.getTeam1Score() > 11) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid score: If team has 13 rounds, opponent cannot have more than 11 rounds (max 24 total)");
+        }
+
+        // Дополнительная проверка: если у одной команды больше 13, у другой не может быть больше разницы
+        if (request.getTeam1Score() > 13 && request.getTeam2Score() > request.getTeam1Score() - 2) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid score: To win with more than 13 rounds, you need at least 2 round advantage");
+        }
+        if (request.getTeam2Score() > 13 && request.getTeam1Score() > request.getTeam2Score() - 2) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid score: To win with more than 13 rounds, you need at least 2 round advantage");
         }
 
         Integer winnerTeamId = null;
