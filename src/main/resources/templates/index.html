@@ -374,14 +374,17 @@
     let playerStatIndex = 0;
 
     // Загрузка при старте
-    document.addEventListener('DOMContentLoaded', () => {
-        loadTeams();
-        loadPlayers();
-        loadTeamStats();
-        loadPlayerStats();
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Сначала загружаем статистику
+        await loadTeamStats();
+        await loadPlayerStats();
+
+        // Потом загружаем команды и игроков (они используют статистику)
+        await loadTeams();
+        await loadPlayers();
     });
 
-    // ==================== ЗАГРУЗКА СТАТИСТИКИ ====================
+    //ЗАГРУЗКА СТАТИСТИКИ
     async function loadTeamStats() {
         try {
             const response = await fetch(`${API_BASE}/stats/teams`);
@@ -408,7 +411,7 @@
         }
     }
 
-    // ==================== КОМАНДЫ ====================
+    //КОМАНДЫ
     async function loadTeams() {
         try {
             const response = await fetch(`${API_BASE}/teams`);
@@ -544,7 +547,7 @@
         }
     }
 
-    // ==================== ИГРОКИ ====================
+    //ИГРОКИ
     async function loadPlayers() {
         try {
             const [playersRes, statsRes] = await Promise.all([
@@ -722,7 +725,7 @@
         }
     }
 
-    // ==================== СОЗДАНИЕ ====================
+    //СОЗДАНИЕ
     async function showCreateTeamModal() {
         const name = prompt('Введите название команды:');
         if (name && name.trim()) {
@@ -808,7 +811,7 @@
         }
     }
 
-    // ==================== МАТЧИ ====================
+    //МАТЧИ
     async function showAddMatchModal() {
         await loadTeams();
         document.getElementById('matchModal').style.display = 'flex';
@@ -908,7 +911,7 @@
         }
     }
 
-    // ==================== ВСПОМОГАТЕЛЬНЫЕ ====================
+    //ВСПОМОГАТЕЛЬНЫЕ
     function escapeHtml(str) {
         if (!str) return '';
         return String(str).replace(/[&<>]/g, function(m) {

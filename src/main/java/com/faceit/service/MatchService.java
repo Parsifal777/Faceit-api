@@ -24,7 +24,8 @@ public class MatchService {
     private final TeamStatsRepository teamStatsRepository;
     private final PlayerStatisticsRepository playerStatisticsRepository;
     private final PlayerStatsRepository playerStatsRepository;
-    private final PlayerRepository playerRepository;  // ← ДОБАВЬ ЭТО!
+    private final PlayerRepository playerRepository;
+    private final RedisStatsService redisStatsService;
 
     private static final int MAX_ROUNDS = 24;
 
@@ -46,7 +47,6 @@ public class MatchService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Max rounds is " + MAX_ROUNDS);
         }
 
-        // Определяем победителя
         Integer winnerTeamId = null;
         int team1Won = 0;
         int team2Won = 0;
@@ -54,10 +54,8 @@ public class MatchService {
         if (request.getTeam1Score() > request.getTeam2Score()) {
             winnerTeamId = request.getTeam1Id();
             team1Won = 1;
-            team2Won = 0;
         } else if (request.getTeam2Score() > request.getTeam1Score()) {
             winnerTeamId = request.getTeam2Id();
-            team1Won = 0;
             team2Won = 1;
         } else {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Match cannot be a draw");
@@ -75,14 +73,13 @@ public class MatchService {
 
         Match savedMatch = matchRepository.save(match);
 
-        // Обновляем статистику команд
+        // Обновляем статистику команд (PostgreSQL + Redis)
         updateTeamStats(request.getTeam1Id(), team1Won);
         updateTeamStats(request.getTeam2Id(), team2Won);
 
         // Обновляем статистику игроков
         if (request.getPlayerStats() != null) {
             for (MatchRequest.PlayerMatchStatRequest stat : request.getPlayerStats()) {
-                // Проверка: существует ли игрок
                 if (!playerRepository.existsById(stat.getPlayerId())) {
                     continue;
                 }
@@ -96,21 +93,20 @@ public class MatchService {
                 playerMatchStats.setDeaths(stat.getDeaths());
                 playerMatchStatsRepository.save(playerMatchStats);
 
-                // Определяем, победил ли игрок (если его команда победила)
                 int playerWon = 0;
                 Integer playerTeamId = getPlayerTeamId(stat.getPlayerId());
                 if (playerTeamId != null && playerTeamId.equals(winnerTeamId)) {
                     playerWon = 1;
                 }
 
-                // Обновляем статистику игрока
+                // Обновляем статистику игрока (PostgreSQL + Redis)
                 updatePlayerStats(stat.getPlayerId(), stat.getKills(), stat.getAssists(), stat.getDeaths(), playerWon);
             }
         }
     }
 
     private void updateTeamStats(Integer teamId, int won) {
-        // Обновляем сырую статистику
+        //Сохраняем в PostgreSQL (постоянное хранилище)
         TeamStatistics teamStats = teamStatisticsRepository.findByTeamId(teamId)
                 .orElseGet(() -> {
                     TeamStatistics ts = new TeamStatistics();
@@ -124,28 +120,14 @@ public class MatchService {
         teamStats.setMatchesWon(teamStats.getMatchesWon() + won);
         teamStatisticsRepository.save(teamStats);
 
-        // Пересчитываем и обновляем винрейт
-        BigDecimal winRate = BigDecimal.ZERO;
-        if (teamStats.getMatchesPlayed() > 0) {
-            winRate = BigDecimal.valueOf(teamStats.getMatchesWon())
-                    .divide(BigDecimal.valueOf(teamStats.getMatchesPlayed()), 4, RoundingMode.HALF_UP)
-                    .multiply(BigDecimal.valueOf(100))
-                    .setScale(2, RoundingMode.HALF_UP);
+        //Обновляем Redis (быстрый кэш)
+        redisStatsService.incrementTeamMatches(teamId);
+        if (won == 1) {
+            redisStatsService.incrementTeamWins(teamId);
         }
-
-        TeamStats teamStatsCalc = teamStatsRepository.findByTeamId(teamId)
-                .orElseGet(() -> {
-                    TeamStats ts = new TeamStats();
-                    ts.setTeamId(teamId);
-                    ts.setWinRate(BigDecimal.ZERO);
-                    return ts;
-                });
-        teamStatsCalc.setWinRate(winRate);
-        teamStatsRepository.save(teamStatsCalc);
     }
 
     private void updatePlayerStats(Integer playerId, int kills, int assists, int deaths, int won) {
-        // Обновляем сырую статистику
         PlayerStatistics playerStats = playerStatisticsRepository.findByPlayerId(playerId)
                 .orElseGet(() -> {
                     PlayerStatistics ps = new PlayerStatistics();
@@ -165,7 +147,6 @@ public class MatchService {
         playerStats.setMatchesWon(playerStats.getMatchesWon() + won);
         playerStatisticsRepository.save(playerStats);
 
-        // Пересчитываем K/D
         BigDecimal kd = BigDecimal.ZERO;
         if (playerStats.getDeaths() > 0) {
             kd = BigDecimal.valueOf(playerStats.getKills())
@@ -174,7 +155,6 @@ public class MatchService {
             kd = BigDecimal.valueOf(playerStats.getKills());
         }
 
-        // Пересчитываем K/R (примерно 15 раундов за матч в среднем)
         int totalRounds = playerStats.getMatchesPlayed() * 15;
         BigDecimal kr = BigDecimal.ZERO;
         if (totalRounds > 0) {
@@ -182,7 +162,6 @@ public class MatchService {
                     .divide(BigDecimal.valueOf(totalRounds), 2, RoundingMode.HALF_UP);
         }
 
-        // Пересчитываем винрейт
         BigDecimal winRate = BigDecimal.ZERO;
         if (playerStats.getMatchesPlayed() > 0) {
             winRate = BigDecimal.valueOf(playerStats.getMatchesWon())
@@ -191,7 +170,6 @@ public class MatchService {
                     .setScale(2, RoundingMode.HALF_UP);
         }
 
-        // Обновляем вычисляемую статистику
         PlayerStats playerStatsCalc = playerStatsRepository.findByPlayerId(playerId)
                 .orElseGet(() -> {
                     PlayerStats ps = new PlayerStats();
@@ -205,6 +183,14 @@ public class MatchService {
         playerStatsCalc.setKd(kd);
         playerStatsCalc.setKr(kr);
         playerStatsRepository.save(playerStatsCalc);
+
+        redisStatsService.incrementPlayerMatches(playerId);
+        redisStatsService.incrementPlayerKills(playerId, kills);
+        redisStatsService.incrementPlayerAssists(playerId, assists);
+        redisStatsService.incrementPlayerDeaths(playerId, deaths);
+        if (won == 1) {
+            redisStatsService.incrementPlayerWins(playerId);
+        }
     }
 
     private Integer getPlayerTeamId(Integer playerId) {

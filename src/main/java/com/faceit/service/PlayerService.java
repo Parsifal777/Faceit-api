@@ -131,7 +131,7 @@ public class PlayerService {
                 player.getPlayerId(),
                 player.getNickname(),
                 player.getTeamId(),
-                teamName[0]  // ← Здесь должен быть String, а не AtomicReference!
+                teamName[0]
         );
     }
 }
