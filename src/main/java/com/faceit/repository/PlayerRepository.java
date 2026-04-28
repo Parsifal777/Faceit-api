@@ -1,12 +1,11 @@
 package com.faceit.repository;
 
 import com.faceit.entity.Player;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,28 +17,28 @@ public interface PlayerRepository extends JpaRepository<Player, Integer> {
 
     List<Player> findByTeamId(Integer teamId);
 
-    List<Player> findByTeamIdIsNull();
-
     boolean existsByNicknameIgnoreCase(String nickname);
 
-    @Query("SELECT COUNT(p) FROM Player p WHERE p.teamId = :teamId")
-    int countPlayersInTeam(@Param("teamId") Integer teamId);
+    int countByTeamId(Integer teamId);
+
+    @Query("SELECT p FROM Player p LEFT JOIN FETCH p.team WHERE p.playerId = :playerId")
+    Optional<Player> findByIdWithTeam(@Param("playerId") Integer playerId);
+
+    @Query("SELECT p FROM Player p LEFT JOIN FETCH p.team LEFT JOIN FETCH p.playerStatistics WHERE p.teamId = :teamId")
+    List<Player> findByTeamIdWithAllData(@Param("teamId") Integer teamId);
+
+    @Query("SELECT p FROM Player p LEFT JOIN FETCH p.playerStatistics WHERE p.playerId = :playerId")
+    Optional<Player> findByIdWithStatistics(@Param("playerId") Integer playerId);
+
+    @Query("SELECT p FROM Player p LEFT JOIN FETCH p.team LEFT JOIN FETCH p.playerStatistics WHERE p.playerId = :playerId")
+    Optional<Player> findByIdWithAllData(@Param("playerId") Integer playerId);
 
     @Query("SELECT p.teamId FROM Player p WHERE p.playerId = :playerId")
     Integer findTeamIdByPlayerId(@Param("playerId") Integer playerId);
 
-    @Query("SELECT p FROM Player p JOIN PlayerStats ps ON p.playerId = ps.playerId WHERE ps.kd > :minKd")
-    List<Player> findPlayersWithKdGreaterThan(@Param("minKd") double minKd);
+    @EntityGraph(attributePaths = {"team", "playerStatistics"})
+    Optional<Player> findByPlayerId(Integer playerId);
 
-    @Query("SELECT p FROM Player p " +
-            "LEFT JOIN FETCH p.playerStatistics " +
-            "LEFT JOIN FETCH p.playerStats " +
-            "WHERE p.playerId = :playerId")
-    Optional<Player> findByIdWithAllStats(@Param("playerId") Integer playerId);
-
-    @Modifying
-    @Transactional
-    @Query("UPDATE Player p SET p.teamId = :newTeamId WHERE p.teamId = :oldTeamId")
-    int movePlayersToTeam(@Param("oldTeamId") Integer oldTeamId,
-                          @Param("newTeamId") Integer newTeamId);
+    @EntityGraph(attributePaths = {"team"})
+    List<Player> findAllByOrderByNicknameAsc();
 }

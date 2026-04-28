@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,16 +24,19 @@ public class PlayerService {
 
     private static final int MAX_PLAYERS_PER_TEAM = 5;
 
+
     public List<PlayerResponse> getAllPlayers() {
-        return playerRepository.findAll().stream()
-                .map(this::convertToResponse)
+        // Используем метод с @EntityGraph (загружаем team и playerStatistics за 1 запрос)
+        return playerRepository.findAllByOrderByNicknameAsc().stream()
+                .map(this::convertToResponseOptimized)
                 .collect(Collectors.toList());
     }
 
     public PlayerResponse getPlayerById(Integer id) {
-        Player player = playerRepository.findById(id)
+        // Оптимизированный метод с JOIN FETCH (все данные за 1 запрос)
+        Player player = playerRepository.findByIdWithAllData(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found with id: " + id));
-        return convertToResponse(player);
+        return convertToResponseOptimized(player);
     }
 
     public List<PlayerResponse> getPlayersByTeam(Integer teamId) {
@@ -43,15 +45,14 @@ public class PlayerService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found with id: " + teamId);
         }
 
-        return playerRepository.findByTeamId(teamId).stream()
-                .map(this::convertToResponse)
+        // Оптимизированный метод - загружаем всех игроков команды со статистикой за 1 запрос
+        return playerRepository.findByTeamIdWithAllData(teamId).stream()
+                .map(this::convertToResponseOptimized)
                 .collect(Collectors.toList());
     }
 
     @Transactional
     public PlayerResponse createPlayer(PlayerRequest request) {
-        // Проверка: teamId не может быть null (это уже проверяет @NotNull)
-
         // Проверка: существует ли команда
         Team team = teamRepository.findById(request.getTeamId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -64,26 +65,26 @@ public class PlayerService {
         }
 
         // Проверка: не превышен ли лимит игроков в команде (максимум 5)
-        int currentPlayersCount = playerRepository.countPlayersInTeam(request.getTeamId());
+        int currentPlayersCount = playerRepository.countByTeamId(request.getTeamId());
         if (currentPlayersCount >= MAX_PLAYERS_PER_TEAM) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("Team '%s' already has %d players (max %d). Cannot add more players.",
                             team.getName(), currentPlayersCount, MAX_PLAYERS_PER_TEAM));
         }
 
-        // Создаём игрока (teamId обязательно)
+        // Создаём игрока
         Player player = new Player();
         player.setNickname(request.getNickname());
-        player.setTeamId(request.getTeamId());  // ← всегда есть значение
+        player.setTeamId(request.getTeamId());
 
         Player savedPlayer = playerRepository.save(player);
-        return convertToResponse(savedPlayer);
+        return convertToResponseOptimized(savedPlayer);
     }
 
     @Transactional
     public PlayerResponse updatePlayerTeam(Integer playerId, Integer newTeamId) {
-        // Проверка: существует ли игрок
-        Player player = playerRepository.findById(playerId)
+        // Оптимизированная загрузка игрока
+        Player player = playerRepository.findByIdWithTeam(playerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Player not found with id: " + playerId));
 
@@ -99,7 +100,7 @@ public class PlayerService {
                         "Team not found with id: " + newTeamId));
 
         // Проверка: не превышен ли лимит в новой команде
-        int currentPlayersCount = playerRepository.countPlayersInTeam(newTeamId);
+        int currentPlayersCount = playerRepository.countByTeamId(newTeamId);
         if (currentPlayersCount >= MAX_PLAYERS_PER_TEAM) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("Team '%s' already has %d players (max %d). Cannot add more players.",
@@ -110,7 +111,7 @@ public class PlayerService {
         player.setTeamId(newTeamId);
         Player updatedPlayer = playerRepository.save(player);
 
-        return convertToResponse(updatedPlayer);
+        return convertToResponseOptimized(updatedPlayer);
     }
 
     @Transactional
@@ -121,17 +122,18 @@ public class PlayerService {
         playerRepository.deleteById(id);
     }
 
-    private PlayerResponse convertToResponse(Player player) {
-        final String[] teamName = {null};
-        if (player.getTeamId() != null) {
-            teamRepository.findById(player.getTeamId()).ifPresent(team -> teamName[0] = team.getName());
+    private PlayerResponse convertToResponseOptimized(Player player) {
+
+        String teamName = null;
+        if (player.getTeam() != null) {
+            teamName = player.getTeam().getName();
         }
 
         return new PlayerResponse(
                 player.getPlayerId(),
                 player.getNickname(),
                 player.getTeamId(),
-                teamName[0]
+                teamName
         );
     }
 }

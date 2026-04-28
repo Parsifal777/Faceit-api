@@ -16,6 +16,9 @@ public interface PlayerStatisticsRepository extends JpaRepository<PlayerStatisti
 
     Optional<PlayerStatistics> findByPlayerId(Integer playerId);
 
+    @Query("SELECT ps FROM PlayerStatistics ps JOIN FETCH ps.player WHERE ps.playerId = :playerId")
+    Optional<PlayerStatistics> findByIdWithPlayer(@Param("playerId") Integer playerId);
+
     @Modifying
     @Transactional
     @Query("UPDATE PlayerStatistics ps SET " +

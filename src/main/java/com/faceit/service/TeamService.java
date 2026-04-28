@@ -23,13 +23,21 @@ public class TeamService {
     }
 
     public List<TeamResponse> getAllTeams() {
-        return teamRepository.findAll().stream()
+        // Используем JOIN FETCH для загрузки игроков одним запросом
+        return teamRepository.findAllWithPlayers().stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
 
     public TeamResponse getTeamById(Integer id) {
-        Team team = teamRepository.findById(id)
+        // Оптимизированный метод с JOIN FETCH (загружаем команду + игроков + их статистику)
+        Team team = teamRepository.findByIdWithPlayersAndStats(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found with id: " + id));
+        return convertToResponse(team);
+    }
+
+    public TeamResponse getTeamByIdWithPlayers(Integer id) {
+        Team team = teamRepository.findByIdWithPlayers(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found with id: " + id));
         return convertToResponse(team);
     }
@@ -56,6 +64,11 @@ public class TeamService {
     }
 
     private TeamResponse convertToResponse(Team team) {
-        return new TeamResponse(team.getTeamId(), team.getName());
+        return new TeamResponse(
+                team.getTeamId(),
+                team.getName()
+                // Если нужно вернуть количество игроков, можно добавить:
+                // team.getPlayers() != null ? team.getPlayers().size() : 0
+        );
     }
 }
