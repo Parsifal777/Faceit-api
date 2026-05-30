@@ -145,6 +145,27 @@ public class MatchService {
         teamStats.setMatchesWon(teamStats.getMatchesWon() + won);
         teamStatisticsRepository.save(teamStats);
 
+        BigDecimal winRate;
+        if (teamStats.getMatchesPlayed() > 0) {
+            winRate = BigDecimal.valueOf(teamStats.getMatchesWon())
+                    .divide(BigDecimal.valueOf(teamStats.getMatchesPlayed()), 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100))
+                    .setScale(2, RoundingMode.HALF_UP);
+        } else {
+            winRate = BigDecimal.ZERO;
+        }
+
+        // Обновляем team_stats
+        TeamStats teamStatsCalc = teamStatsRepository.findByTeamId(teamId)
+                .orElseGet(() -> {
+                    TeamStats ts = new TeamStats();
+                    ts.setTeamId(teamId);
+                    ts.setWinRate(winRate);
+                    return ts;
+                });
+        teamStatsCalc.setWinRate(winRate);
+        teamStatsRepository.save(teamStatsCalc);
+
         //Обновляем Redis (быстрый кэш)
         redisStatsService.incrementTeamMatches(teamId);
         if (won == 1) {
