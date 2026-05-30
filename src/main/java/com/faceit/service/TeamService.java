@@ -1,5 +1,7 @@
 package com.faceit.service;
 
+import com.faceit.annotation.Loggable;
+import com.faceit.annotation.PerformanceLog;
 import com.faceit.dto.TeamRequest;
 import com.faceit.dto.TeamResponse;
 import com.faceit.entity.Team;
@@ -22,6 +24,8 @@ public class TeamService {
         this.teamRepository = teamRepository;
     }
 
+    @PerformanceLog
+    @Loggable(Loggable.LogLevel.INFO)
     public List<TeamResponse> getAllTeams() {
         // Используем JOIN FETCH для загрузки игроков одним запросом
         return teamRepository.findAllWithPlayers().stream()
@@ -29,6 +33,8 @@ public class TeamService {
                 .collect(Collectors.toList());
     }
 
+    @PerformanceLog
+    @Loggable(Loggable.LogLevel.INFO)
     public TeamResponse getTeamById(Integer id) {
         // Оптимизированный метод с JOIN FETCH (загружаем команду + игроков + их статистику)
         Team team = teamRepository.findByIdWithPlayersAndStats(id)
@@ -42,6 +48,7 @@ public class TeamService {
         return convertToResponse(team);
     }
 
+    @Loggable(Loggable.LogLevel.WARN)
     @Transactional
     public TeamResponse createTeam(TeamRequest request) {
         if (teamRepository.existsByName(request.getName())) {
@@ -55,6 +62,7 @@ public class TeamService {
         return convertToResponse(savedTeam);
     }
 
+    @Loggable(Loggable.LogLevel.ERROR)
     @Transactional
     public void deleteTeam(Integer id) {
         if (!teamRepository.existsById(id)) {

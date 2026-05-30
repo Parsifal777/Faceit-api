@@ -1,5 +1,8 @@
 package com.faceit.service;
 
+import com.faceit.annotation.Loggable;
+import com.faceit.annotation.PerformanceLog;
+import com.faceit.decorator.LoggingDecorator;
 import com.faceit.dto.MatchRequest;
 import com.faceit.entity.*;
 import com.faceit.repository.*;
@@ -29,6 +32,8 @@ public class MatchService {
 
     private static final int MAX_ROUNDS = 13;
 
+    @PerformanceLog
+    @Loggable(Loggable.LogLevel.INFO)
     @Transactional
     public void addMatch(MatchRequest request) {
         // Проверка: существуют ли команды
@@ -66,7 +71,7 @@ public class MatchService {
                     "Invalid score: To win with more than 13 rounds, you need at least 2 round advantage");
         }
 
-        Integer winnerTeamId = null;
+        Integer winnerTeamId;
         int team1Won = 0;
         int team2Won = 0;
 
@@ -77,20 +82,21 @@ public class MatchService {
             winnerTeamId = request.getTeam2Id();
             team2Won = 1;
         } else {
+            winnerTeamId = null;
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Match cannot be a draw");
         }
 
-        // Создаём матч
-        Match match = new Match();
-        match.setTeam1Id(request.getTeam1Id());
-        match.setTeam2Id(request.getTeam2Id());
-        match.setTeam1Score(request.getTeam1Score());
-        match.setTeam2Score(request.getTeam2Score());
-        match.setWinnerTeamId(winnerTeamId);
-        match.setMatchDate(LocalDateTime.now());
-        match.setMapName(request.getMapName());
-
-        Match savedMatch = matchRepository.save(match);
+        Match savedMatch = LoggingDecorator.log("saveMatch", () -> {
+            Match m = new Match();  // ← другое имя переменной
+            m.setTeam1Id(request.getTeam1Id());
+            m.setTeam2Id(request.getTeam2Id());
+            m.setTeam1Score(request.getTeam1Score());
+            m.setTeam2Score(request.getTeam2Score());
+            m.setWinnerTeamId(winnerTeamId);
+            m.setMatchDate(LocalDateTime.now());
+            m.setMapName(request.getMapName());
+            return matchRepository.save(m);
+        });
 
         // Обновляем статистику команд (PostgreSQL + Redis)
         updateTeamStats(request.getTeam1Id(), team1Won);

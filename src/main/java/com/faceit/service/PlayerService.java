@@ -1,5 +1,7 @@
 package com.faceit.service;
 
+import com.faceit.annotation.Loggable;
+import com.faceit.annotation.PerformanceLog;
 import com.faceit.dto.PlayerRequest;
 import com.faceit.dto.PlayerResponse;
 import com.faceit.entity.Player;
@@ -24,7 +26,8 @@ public class PlayerService {
 
     private static final int MAX_PLAYERS_PER_TEAM = 5;
 
-
+    @PerformanceLog
+    @Loggable(Loggable.LogLevel.INFO)
     public List<PlayerResponse> getAllPlayers() {
         // Используем метод с @EntityGraph (загружаем team и playerStatistics за 1 запрос)
         return playerRepository.findAllByOrderByNicknameAsc().stream()
@@ -32,6 +35,8 @@ public class PlayerService {
                 .collect(Collectors.toList());
     }
 
+    @PerformanceLog
+    @Loggable(Loggable.LogLevel.INFO)
     public PlayerResponse getPlayerById(Integer id) {
         // Оптимизированный метод с JOIN FETCH (все данные за 1 запрос)
         Player player = playerRepository.findByIdWithAllData(id)
@@ -39,6 +44,8 @@ public class PlayerService {
         return convertToResponseOptimized(player);
     }
 
+    @PerformanceLog
+    @Loggable(Loggable.LogLevel.INFO)
     public List<PlayerResponse> getPlayersByTeam(Integer teamId) {
         // Проверяем, существует ли команда
         if (!teamRepository.existsById(teamId)) {
@@ -51,6 +58,7 @@ public class PlayerService {
                 .collect(Collectors.toList());
     }
 
+    @Loggable(Loggable.LogLevel.WARN)
     @Transactional
     public PlayerResponse createPlayer(PlayerRequest request) {
         // Проверка: существует ли команда
@@ -114,6 +122,7 @@ public class PlayerService {
         return convertToResponseOptimized(updatedPlayer);
     }
 
+    @Loggable(Loggable.LogLevel.ERROR)
     @Transactional
     public void deletePlayer(Integer id) {
         if (!playerRepository.existsById(id)) {
