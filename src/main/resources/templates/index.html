@@ -5,6 +5,171 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Faceit Admin Panel</title>
     <style>
+        .spotlight {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .spotlight::before {
+            content: '';
+            position: absolute;
+            top: var(--y, 0);
+            left: var(--x, 0);
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 75%);
+            transform: translate(-50%, -50%);
+            transition: width 0.5s ease, height 0.5s ease;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .spotlight:hover::before {
+            width: 200px;
+            height: 200px;
+        }
+
+        /* Эффект для карточек */
+        .card.spotlight {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card.spotlight:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(233, 69, 96, 0.3);
+        }
+
+        /* Эффект для элементов списков */
+        .list-item.spotlight {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .list-item.spotlight::before {
+            content: '';
+            position: absolute;
+            top: var(--y, 0);
+            left: var(--x, 0);
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(233, 69, 96, 0.9) 0%, rgba(233, 69, 96, 0) 80%);
+            transform: translate(-50%, -50%);
+            transition: width 0.4s ease, height 0.4s ease;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .list-item.spotlight:hover::before {
+            width: 400px;
+            height: 400px;
+        }
+
+        .list-item.spotlight > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Эффект для кнопок */
+        .btn.spotlight {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .btn.spotlight::before {
+            content: '';
+            position: absolute;
+            top: var(--y, 0);
+            left: var(--x, 0);
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 80%);
+            transform: translate(-50%, -50%);
+            transition: width 0.4s ease, height 0.4s ease;
+            pointer-events: none;
+        }
+
+        .btn.spotlight:hover::before {
+            width: 200px;
+            height: 200px;
+        }
+
+        /* Эффект для детальной панели */
+        .detail-panel.spotlight {
+            transition: all 0.3s ease;
+        }
+
+        .detail-panel.spotlight:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 25px rgba(233, 69, 96, 0.2);
+        }
+
+        /* Анимация пульсации для активных элементов */
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(233, 69, 96, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(233, 69, 96, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(233, 69, 96, 0);
+            }
+        }
+
+        .spotlight.pulse {
+            animation: pulse 2s infinite;
+        }
+
+        /* Градиентная граница при наведении */
+        .card.spotlight-glow {
+            position: relative;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+        }
+
+        .card.spotlight-glow::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #e94560, #ff6b6b, #e94560);
+            border-radius: 18px;
+            opacity: 0.2;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .card.spotlight-glow:hover::after {
+            opacity: 1;
+        }
+
+        /* Мерцающий текст */
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        .shimmer-text {
+            background: linear-gradient(90deg, #e94560, #ff6b6b, #e94560);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -296,19 +461,19 @@
 <body>
 <div class="container">
     <div class="header">
-        <h1>🎮 Faceit Admin Panel</h1>
+        <h1 class="shimmer-text">🎮 Faceit Admin Panel</h1>
         <p>Управление командами, игроками и статистикой матчей</p>
     </div>
 
     <div class="buttons-section">
-        <button class="btn btn-primary" onclick="showCreateTeamModal()">➕ Создать команду</button>
-        <button class="btn btn-primary" onclick="showCreatePlayerModal()">➕ Создать игрока</button>
-        <button class="btn btn-success" onclick="showAddMatchModal()">🎯 Добавить матч</button>
+        <button class="btn btn-primary spotlight" onclick="showCreateTeamModal()">➕ Создать команду</button>
+        <button class="btn btn-primary spotlight" onclick="showCreatePlayerModal()">➕ Создать игрока</button>
+        <button class="btn btn-success spotlight" onclick="showAddMatchModal()">🎯 Добавить матч</button>
     </div>
 
     <div class="content">
         <!-- Teams List -->
-        <div class="card">
+        <div class="card spotlight spotlight-glow">
             <h2>🏆 Команды</h2>
             <div class="list" id="teamsList">
                 <div class="empty-message">Загрузка...</div>
@@ -316,7 +481,7 @@
         </div>
 
         <!-- Players List -->
-        <div class="card">
+        <div class="card spotlight spotlight-glow">
             <h2>👥 Игроки</h2>
             <div class="list" id="playersList">
                 <div class="empty-message">Загрузка...</div>
@@ -325,7 +490,7 @@
     </div>
 
     <!-- Detail Panel -->
-    <div class="detail-panel" id="detailPanel">
+    <div class="detail-panel spotlight" id="detailPanel">
         <h3>📊 Детальная информация</h3>
         <div id="detailContent">
             <div class="empty-message">Нажмите на команду или игрока для просмотра деталей</div>
@@ -384,6 +549,49 @@
         await loadPlayers();
     });
 
+        // ==================== SPOTLIGHT EFFECT ====================
+
+    // Функция для обновления позиции курсора
+    function updateSpotlightPosition(e, element) {
+        const rect = element.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        element.style.setProperty('--x', x + 'px');
+        element.style.setProperty('--y', y + 'px');
+    }
+
+    // Добавляем эффект spotlight всем элементам с классом .spotlight
+    function initSpotlightEffect() {
+        const spotlightElements = document.querySelectorAll('.spotlight');
+
+        spotlightElements.forEach(element => {
+            element.addEventListener('mousemove', (e) => {
+                updateSpotlightPosition(e, element);
+            });
+
+            // Сброс позиции при уходе мыши (опционально)
+            element.addEventListener('mouseleave', () => {
+                element.style.setProperty('--x', '50%');
+                element.style.setProperty('--y', '50%');
+            });
+        });
+    }
+
+    // Запускаем эффект после загрузки страницы
+    document.addEventListener('DOMContentLoaded', () => {
+        initSpotlightEffect();
+
+        // Также следим за динамически добавляемыми элементами
+        const observer = new MutationObserver(() => {
+            initSpotlightEffect();
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    });
+
     //ЗАГРУЗКА СТАТИСТИКИ
     async function loadTeamStats() {
         try {
@@ -436,7 +644,7 @@
         container.innerHTML = teams.map(team => {
             const stats = window.teamStatsMap?.get(team.teamId);
             return `
-                <div class="list-item" onclick="showTeamDetail(${team.teamId})">
+                <div class="list-item spotlight" onclick="showTeamDetail(${team.teamId})">
                     <span class="item-name">🏆 ${escapeHtml(team.name)}</span>
                     <div class="item-stats">
                         <span class="stat-badge">📊 М:${stats?.matchesPlayed || 0}</span>
@@ -579,7 +787,7 @@
         container.innerHTML = players.map(player => {
             const stats = window.playerStatsMap?.get(player.playerId);
             return `
-                <div class="list-item" onclick="showPlayerDetail(${player.playerId})">
+                <div class="list-item spotlight" onclick="showPlayerDetail(${player.playerId})">
                     <span class="item-name">👤 ${escapeHtml(player.nickname)}</span>
                     <div class="item-stats">
                         <span class="stat-badge">💀 K/D: ${stats?.kd || 0}</span>
