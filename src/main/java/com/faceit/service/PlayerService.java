@@ -62,18 +62,18 @@ public class PlayerService {
     @Transactional
     public PlayerResponse createPlayer(PlayerRequest request) {
         // Проверка: существует ли команда
-        Team team = teamRepository.findById(request.getTeamId())
+        Team team = teamRepository.findById(request.teamId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Team not found with id: " + request.getTeamId()));
+                        "Team not found with id: " + request.teamId()));
 
         // Проверка: не занят ли никнейм
-        if (playerRepository.existsByNicknameIgnoreCase(request.getNickname())) {
+        if (playerRepository.existsByNicknameIgnoreCase(request.nickname())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Nickname already exists: " + request.getNickname());
+                    "Nickname already exists: " + request.nickname());
         }
 
         // Проверка: не превышен ли лимит игроков в команде (максимум 5)
-        int currentPlayersCount = playerRepository.countByTeamId(request.getTeamId());
+        int currentPlayersCount = playerRepository.countByTeamId(request.teamId());
         if (currentPlayersCount >= MAX_PLAYERS_PER_TEAM) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("Team '%s' already has %d players (max %d). Cannot add more players.",
@@ -82,8 +82,8 @@ public class PlayerService {
 
         // Создаём игрока
         Player player = new Player();
-        player.setNickname(request.getNickname());
-        player.setTeamId(request.getTeamId());
+        player.setNickname(request.nickname());
+        player.setTeamId(request.teamId());
 
         Player savedPlayer = playerRepository.save(player);
         return convertToResponseOptimized(savedPlayer);
