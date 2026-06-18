@@ -50,13 +50,13 @@ public class TeamController {
     @PostMapping
     public ResponseEntity<TeamResponse> createTeam(@RequestBody TeamRequest request) {
         // Проверяем, что имя не пустое
-        if (request.getName() == null || request.getName().trim().isEmpty()) {
+        if (request.name() == null || request.name().trim().isEmpty()) {
             return ResponseEntity.badRequest().build();
         }
 
         // Создаём новую команду
         Team team = new Team();
-        team.setName(request.getName());
+        team.setName(request.name());
 
         // Сохраняем в базу
         Team savedTeam = teamRepository.save(team);

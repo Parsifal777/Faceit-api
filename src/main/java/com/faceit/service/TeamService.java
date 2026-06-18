@@ -19,7 +19,6 @@ public class TeamService {
 
     private final TeamRepository teamRepository;
 
-    // Ручной конструктор вместо Lombok
     public TeamService(TeamRepository teamRepository) {
         this.teamRepository = teamRepository;
     }
@@ -51,12 +50,12 @@ public class TeamService {
     @Loggable(Loggable.LogLevel.WARN)
     @Transactional
     public TeamResponse createTeam(TeamRequest request) {
-        if (teamRepository.existsByName(request.getName())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Team name already exists: " + request.getName());
+        if (teamRepository.existsByName(request.name())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Team name already exists: " + request.name());
         }
 
         Team team = new Team();
-        team.setName(request.getName());
+        team.setName(request.name());
 
         Team savedTeam = teamRepository.save(team);
         return convertToResponse(savedTeam);
@@ -75,8 +74,6 @@ public class TeamService {
         return new TeamResponse(
                 team.getTeamId(),
                 team.getName()
-                // Если нужно вернуть количество игроков, можно добавить:
-                // team.getPlayers() != null ? team.getPlayers().size() : 0
         );
     }
 }
