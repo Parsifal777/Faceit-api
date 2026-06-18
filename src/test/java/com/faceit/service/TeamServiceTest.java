@@ -15,12 +15,14 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class TeamServicetest {
+class TeamServiceTest {
+
     @Mock
     private TeamRepository teamRepository;
 
@@ -28,7 +30,7 @@ public class TeamServicetest {
     private TeamService teamService;
 
     private Team testTeam;
-    private TeamRequest teamRequest;
+    private TeamRequest testRequest;
 
     @BeforeEach
     void setUp() {
@@ -36,15 +38,15 @@ public class TeamServicetest {
         testTeam.setTeamId(1);
         testTeam.setName("Test Team");
 
-        teamRequest = new TeamRequest("Test team");
+        testRequest = new TeamRequest("Test Team");
     }
 
     @Test
     void createTeam_ShouldCreateTeam_WhenValidRequest() {
-        when(teamRepository.existsByName("Test team")).thenReturn(false);
+        when(teamRepository.existsByName("Test Team")).thenReturn(false);
         when(teamRepository.save(any(Team.class))).thenReturn(testTeam);
 
-        TeamResponse response = teamService.createTeam(teamRequest);
+        TeamResponse response = teamService.createTeam(testRequest);
 
         assertThat(response).isNotNull();
         assertThat(response.name()).isEqualTo("Test Team");
