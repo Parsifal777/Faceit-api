@@ -2,6 +2,7 @@ package com.faceit.service;
 
 import com.faceit.annotation.Loggable;
 import com.faceit.annotation.PerformanceLog;
+import com.faceit.dto.ErrorResponse;
 import com.faceit.dto.PlayerRequest;
 import com.faceit.dto.PlayerResponse;
 import com.faceit.entity.Player;
@@ -9,14 +10,17 @@ import com.faceit.entity.Team;
 import com.faceit.repository.PlayerRepository;
 import com.faceit.repository.TeamRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PlayerService {
@@ -38,10 +42,22 @@ public class PlayerService {
     @PerformanceLog
     @Loggable(Loggable.LogLevel.INFO)
     public PlayerResponse getPlayerById(Integer id) {
-        // Оптимизированный метод с JOIN FETCH (все данные за 1 запрос)
-        Player player = playerRepository.findByIdWithAllData(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found with id: " + id));
-        return convertToResponseOptimized(player);
+        try {
+            return playerRepository.findByIdWithAllData(id)
+                    .map(this::convertToResponseOptimized)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Player not found with id: " + id
+                    ));
+        } catch (ResponseStatusException e) {
+            ErrorResponse error = new ErrorResponse(
+                    e.getReason(),
+                    e.getStatusCode().value(),
+                    LocalDateTime.now()
+            );
+            log.error("Error occurred: {}", error);
+            throw e;
+        }
     }
 
     @PerformanceLog
