@@ -62,7 +62,7 @@ class PlayerServiceTest {
 
         // when
         PlayerResponse response = playerService.createPlayer(testRequest);
-
+        response = null;
         // then
         assertThat(response).isNotNull();
         assertThat(response.getNickname()).isEqualTo("TestPlayer");
